@@ -14,46 +14,25 @@
  * 201609021553: agar tidak ambigu dalam penggunaannya,
  * semua file cutter-view, harus memiliki suffix *.cutter.php
  * 
- * @date		201608061555, 201608281400, 201608291945, 201609021729, 201610172024
- * @version		Version 1.1 (CI Version 3.1.0)
+ * @date		201608061555, 201608281400, 201608291945, 201609021729, 201610172024, 201611291546
+ * @version		Version 1.2 (Tested with CI Version 3.1.0 - 3.1.2)
  *
  * @package		CodeIgniter
  * @subpackage	Libraries
  * @category	Template View
  * @author		anovsiradj (Mayendra Costanov) <anov.siradj(22@(gmail|live).com|@gin.co.id)>
- * @link		https://github/anovsiradj/codeigniter-cutter/
- * @license		MIT License (Aku membuatnya bukan atas nama perusahaan. jadi saya berhak menentukan legalitas kode-sumber ini).
+ * @link		https://github.com/anovsiradj/codeigniter-cutter/
+ * @license		GPL-3.0 (Saya membuatnya bukan-atasnama perusahaan. jadi saya berhak menentukan legalitas kode-sumber ini).
  */
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-// cutter facecade
-function cutter($field_name)
-{
-	static $ci_cutter;
-	if(!isset($ci_cutter)) $ci_cutter =& get_instance()->cutter;
-	$ci_cutter->field($field_name);
-}
-function cutter_start($field_name)
-{
-	static $ci_cutter;
-	if(!isset($ci_cutter)) $ci_cutter =& get_instance()->cutter;
-	$ci_cutter->start($field_name);
-}
-function cutter_end()
-{
-	static $ci_cutter;
-	if(!isset($ci_cutter)) $ci_cutter =& get_instance()->cutter;
-	$ci_cutter->end();
-}
-
 class Cutter
 {
-	protected $_default_layout = 'layout';
+	protected $_current_layout = NULL;
 	protected $_view_holder = [];
 	protected $_data_holder = [];
 	protected $_current_field = NULL;
-	protected $_current_stack = NULL;
 
 	/**
 	* Refference to CI sigleton
@@ -63,7 +42,7 @@ class Cutter
 	function __construct()
 	{
 		$this->CI =& get_instance();
-		$this->set_layout($this->_default_layout);
+		$this->set_layout('layout');
 	}
 
 	/**
@@ -73,10 +52,10 @@ class Cutter
 	* 
 	* @return $this
 	*/
-	public function set_layout($cutter_view)
+	public function set_layout($name)
 	{
-		$this->_default_layout = $cutter_view . '.cutter.php';
-		return $this;
+		$name .= '.cutter.php';
+		$this->_current_layout = $name;
 	}
 
 	/**
@@ -84,14 +63,14 @@ class Cutter
 	* 
 	* @return void
 	*/
-	public function field($field_name)
+	public function field($name)
 	{
-		// gak ada data? ya sudah
-		if ( ! isset($this->_view_holder[$field_name])) return;
-
-		// saya tidak suka pakai '' (string kosong), jadi saya pakai null
-		// saya merasa tergan, kalau pakai ''.
-		echo implode(NULL, $this->_view_holder[$field_name]);
+		// apa view data ada? lanjut
+		if (isset($this->_view_holder[$name])) {
+			// saya tidak suka pakai '' (string kosong), jadi saya pakai null
+			// saya merasa tergan, kalau pakai ''.
+			echo implode(NULL, $this->_view_holder[$name]);
+		}
 	}
 
 	/**
@@ -99,56 +78,21 @@ class Cutter
 	* 
 	* @return void | $this
 	*/
-	public function view($cutter_view, $data = [], $render = TRUE)
+	public function view($name, $data = array(), $render = TRUE)
 	{
 		// suffix. untuk identitas, kalau ini adalah view yg digunakan untuk cutter.
 		// karena di CI ada filter jika '.' (titik) dianggap ekstensi
 		// maka harus nulis nama view dengan lengkap
-		$cutter_view .= '.cutter.php';
+		$name .= '.cutter.php';
 
 		// agar, data juga tersedia di layout
-		$this->_data_holder = array_merge($this->_data_holder, $data);
+		$this->data($data);
 
 		// hanya load view.
-		$this->CI->load->view($cutter_view, $this->_data_holder, TRUE);
+		$this->CI->load->view($name, $this->_data_holder, TRUE);
 
 		// barang-kali, tidak ingin langsung tampilkan layout
-		if ($render) {
-			$this->render();
-		} else {
-			return $this;
-		}
-	}
-
-	/**
-	* setview()
-	* 
-	* manual tambah view biasa, ke field pada cutter
-	* 
-	* @return $this
-	*/
-	public function set_view($field_name, $cutter_view, $data = [])
-	{
-		$cutter_view .= '.cutter.php';
-		$this->_data_holder = array_merge($this->_data_holder, $data);
-		$this->_view_holder[$field_name][] =& $this->CI->load->view($cutter_view, $this->_data_holder, TRUE);
-
-		return $this;
-	}
-
-	/**
-	* setecho()
-	* 
-	* tambah content biasa ke field
-	* 
-	* @return $this
-	*/
-	public function set_echo($field_name, $data_echo = NULL) {
-		// barangkali bukan string
-		if (is_string($data_echo)) {
-			$this->_view_holder[$field_name][] = $data_echo;
-		}
-		return $this;
+		if ($render) $this->render();
 	}
 
 	/**
@@ -158,32 +102,35 @@ class Cutter
 	* 
 	* @return void
 	*/
-	public function render()
+	public function render($data = array())
 	{
-		// render, hanya bisa sekali
-		static $is_already_rendered = false;
-		if ($is_already_rendered) return;
-		$is_already_rendered = true;
-
-		$this->CI->load->view($this->_default_layout, $this->_data_holder);
+		$this->data($data);
+		$this->CI->load->view($this->_current_layout, $this->_data_holder);
 	}
 
+
 	/**
-	* Begin view-field output buffer
+	* Start view-field output buffer
 	* 
 	* @return void
 	*/
-	public function start($field_name, $stack = 'next')
+	public function start($name)
 	{
 		// kalau belum di akhiri, ya sudah
-		if ($this->_current_field !== NULL) return;
+		if ($this->_current_field !== NULL) {
+			throw new Exception('Error: Cutter::start() without closing current field.');
+			return;
+		}
 
-		$this->_current_field = $field_name;
+		if (!isset($this->_view_holder[$name])) $this->_view_holder[$name] = array();
+
+		$this->_current_field = $name;
+
 		ob_start();
 	}
 
 	/**
-	* Stop view-field output buffer
+	* End view-field output buffer
 	* then assign to holder
 	* 
 	* @return void
@@ -191,7 +138,10 @@ class Cutter
 	public function end()
 	{
 		// kalau tidak dimulai, ya sudah
-		if ($this->_current_field === NULL) return;
+		if ($this->_current_field === NULL) {
+			throw new Exception('Error: Cutter::end() without start an field.');
+			return;
+		}
 
 		$this->_view_holder[$this->_current_field][] = ob_get_clean();
 
@@ -199,14 +149,54 @@ class Cutter
 	}
 
 	/**
-	* Set data all cutter view
+	* Data Manager
 	* 
 	* @return $this
 	*/
-	public function set_data($key, $value)
+	public function data()
 	{
-		$this->_data_holder[$key] = $value;
-		return $this;
+		$param = func_get_args();
+		if (isset($param[0])) {
+			if (is_array($param[0])) {
+				foreach ($param[0] as $k => $v) {
+					$this->_data_holder[$k] = $v;
+				}
+
+			} else {
+				if (isset($param[1])) {
+					$this->_data_holder[$param[0]] = $param[1];
+
+				} else {
+					if (isset($this->_data_holder[$param[0]])) {
+						return $this->_data_holder[$param[0]];
+					} else {
+						return NULL;
+					}
+				}
+			}
+
+		} else {
+			return $this->_data_holder;
+		}
 	}
 
+}
+
+/*
+
+	CodeIgniter::Cutter Facade
+
+*/
+
+function cutter_field($name) {
+	get_instance()->cutter->field($name);
+}
+
+function cutter_start($name) {
+	get_instance()->cutter->start($name);
+}
+
+function cutter_end()
+{
+	get_instance()->cutter->end();
 }
