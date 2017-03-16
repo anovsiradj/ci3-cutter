@@ -8,6 +8,7 @@
  * saya langsung tertarik dengan Blade (template engine laravel).
  * hingga pada suatu ketika, saya dapat project tim, (diharuskan) menggunakan CodeIgniter.
  * Nah, mau tidak mau, saya meng-iya-kan apa yang tim leader mau (namanya juga --senior--).
+ * Pada akhirnya, library ini tidak digunakan. Hanya untuk pribadi.
  * Tobe Continue...,
  * 
  * Aturan.
@@ -15,7 +16,7 @@
  * semua file cutter-view, harus memiliki suffix *.cutter.php
  * 
  * @date		201608061555, 201608281400, 201608291945, 201609021729, 201610172024, 201611291546
- * @version		Version 1.2 (Tested with CI Version 3.1.0 - 3.1.2)
+ * @version		Version 1.2.1 (Tested with CI Version 3.1.0 - 3.1.3)
  *
  * @package		CodeIgniter
  * @subpackage	Libraries
@@ -30,8 +31,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Cutter
 {
 	protected $_current_layout = NULL;
-	protected $_view_holder = [];
-	protected $_data_holder = [];
+	protected $_view_holder = array();
+	protected $_data_holder = array();
 	protected $_current_field = NULL;
 
 	/**
