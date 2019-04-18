@@ -26,8 +26,6 @@ class Cutter
 	protected $_current_field = NULL;
 	protected $_suffix = '.cutter.php';
 
-	protected static $_facade = TRUE;
-
 	/**
 	* @return $this
 	*/
@@ -35,14 +33,6 @@ class Cutter
 	{
 		$this->CI =& get_instance();
 		$this->set_layout('layout');
-	}
-
-	public function facade()
-	{
-		if (static::$_facade) {
-			require __DIR__ . '/facade.php';
-			static::$_facade = FALSE;
-		}
 	}
 
 	/**
@@ -170,7 +160,7 @@ class Cutter
 	* @param string
 	* @param string|mixed
 	* 
-	* @return void|$this
+	* @return mixed
 	*/
 	public function data()
 	{
@@ -194,5 +184,46 @@ class Cutter
 		} else {
 			return $this->_data_holder;
 		}
+	}
+}
+
+/* CodeIgniter3:Cutter Facade */
+
+if (function_exists('cutter_block')) {
+	function cutter_block($name)
+	{
+		get_instance()->cutter->field($name);
+	}
+}
+
+if (function_exists('cutter_field') === FALSE) {
+	function cutter_field($name) {
+		get_instance()->cutter->field($name);
+	}
+}
+
+if (function_exists('cutter_start') === FALSE) {
+	function cutter_start($name) {
+		get_instance()->cutter->start($name);
+	}
+}
+
+if (function_exists('cutter_begin') === FALSE) {
+	function cutter_begin($name) {
+		get_instance()->cutter->start($name);
+	}
+}
+
+if (function_exists('cutter_end') === FALSE) {
+	function cutter_end()
+	{
+		get_instance()->cutter->end();
+	}
+}
+
+if (function_exists('cutter_stop') === FALSE) {
+	function cutter_stop()
+	{
+		get_instance()->cutter->end();
 	}
 }
