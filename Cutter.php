@@ -81,6 +81,16 @@ class Cutter
 	}
 
 	/**
+	* @return $this
+	*/
+	public function load($name, $data = array())
+	{
+		$this->data($data);
+		$this->CI->load->view($name . $this->_suffix, $this->_data_holder, TRUE);
+		return $this;
+	}
+
+	/**
 	* view()
 	* 
 	* @return $this
@@ -167,8 +177,8 @@ class Cutter
 		$param = func_get_args();
 		if (isset($param[0])) {
 			if (is_array($param[0])) {
-				foreach ($param[0] as $k) {
-					$this->_data_holder[$k] =& $param[0][$v];
+				foreach (array_keys($param[0]) as $k) {
+					$this->_data_holder[$k] =& $param[0][$k];
 				}
 
 			} else {
